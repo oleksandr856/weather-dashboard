@@ -13,6 +13,8 @@ body {
   background-color: #f0f4f8;
 }
 
+/*Header*/
+
 header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
   color: #ffffff;
@@ -87,4 +89,42 @@ header button {
 
 header button:hover {
   background-color: #0369a1;
+}
+
+/*Main & Sections*/
+
+main {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 20px;
+}
+
+section {
+  margin-bottom: 32px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+section h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #0f172a;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+/* Секція поточної погоди */
+#current img {
+  width: 64px;
+  height: 64px;
+  vertical-align: middle;
+  margin-right: 12px;
+}
+
+#current p {
+  display: inline-block;
+  font-size: 1.25rem;
+  margin: 0;
 }
