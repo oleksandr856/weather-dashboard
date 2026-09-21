@@ -162,3 +162,41 @@ section h2 {
   font-weight: 700;
   color: #0f172a;
 }
+
+/*Aside & Footer*/
+
+aside {
+  max-width: 900px;
+  margin: 0 auto 32px auto;
+  padding: 20px;
+  background-color: #e0f2fe;
+  border-left: 4px solid #0284c7;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+aside h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #0369a1;
+  font-size: 1.2rem;
+}
+
+aside p {
+  margin: 0;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  background-color: #0f172a;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  margin-top: 40px;
+}
+
+footer p {
+  margin: 0;
+}
