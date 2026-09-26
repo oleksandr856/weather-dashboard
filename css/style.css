@@ -13,7 +13,7 @@ body {
   background-color: #f0f4f8;
 }
 
-/*Header*/
+/* Header */
 
 header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
@@ -91,7 +91,7 @@ header button:hover {
   background-color: #0369a1;
 }
 
-/*Main & Sections*/
+/* Main & Sections */
 
 main {
   max-width: 900px;
@@ -129,9 +129,9 @@ section h2 {
   margin: 0;
 }
 
-/*Article(карточки прогнозу)*/
+/* Картки прогнозу (.card) */
 
-#forecast article {
+.card {
   background-color: #f8fafc;
   padding: 16px;
   margin-bottom: 16px;
@@ -141,29 +141,29 @@ section h2 {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-#forecast article:last-child {
+.card:last-child {
   margin-bottom: 0;
 }
 
-#forecast article:hover {
+.card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1);
 }
 
-#forecast article h3 {
+.card h3 {
   margin: 0 0 8px 0;
   color: #0369a1;
   font-size: 1.2rem;
 }
 
-#forecast article p {
+.card p {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
   color: #0f172a;
 }
 
-/*Aside & Footer*/
+/* Aside & Footer */
 
 aside {
   max-width: 900px;
