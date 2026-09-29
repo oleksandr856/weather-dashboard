@@ -10,39 +10,40 @@
 </head>
 
 <body>
-  <header>
+  <header class="site-header">
     <h1>Погодний дашборд</h1>
 
-    <nav>
+    <nav class="main-nav">
       <ul>
         <li><a href="#current">Поточна погода</a></li>
         <li><a href="#forecast">Прогноз</a></li>
       </ul>
     </nav>
 
-    <form role="search">
+    <form class="search-form" role="search">
       <label for="city-search">Пошук міста:</label>
       <input type="text" id="city-search" name="city" placeholder="Введіть місто...">
       <button type="submit">Шукати</button>
     </form>
   </header>
 
-  <main>
+  <main class="main-content">
     <div class="top-wrapper">
-      <section id="current">
+      <section id="current" class="current-weather">
         <h2>Поточна погода</h2>
-        <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
-        <p><strong>Київ:</strong> +21&deg;C, ясно</p>
+        <div class="current-weather-info">
+          <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
+          <p><strong>Київ:</strong> +21&deg;C, ясно</p>
+        </div>
       </section>
 
-      <aside>
+      <aside class="daily-tip">
         <h2>Порада дня</h2>
-        <p>Що вдягнути: сьогодні очікується сонячна погода, але ввечері можливе похолодання. Візьміть із собою легку
-          куртку!</p>
+        <p>Що вдягнути: сьогодні очікується сонячна погода, але ввечері можливе похолодання. Візьміть із собою легку куртку!</p>
       </aside>
     </div>
 
-    <section id="forecast">
+    <section id="forecast" class="forecast-section">
       <h2>Прогноз на тиждень</h2>
 
       <div class="forecast-grid">
@@ -84,9 +85,8 @@
     </section>
   </main>
 
-
-  <footer>
-    <p>Навчальний проєкт «Погодний дашборд» &copy; 2026</p>
+  <footer class="site-footer">
+    <p>Навчальний проєкт "Погодний дашборд" &copy; 2026</p>
   </footer>
 
   <script src="js/app.js"></script>
