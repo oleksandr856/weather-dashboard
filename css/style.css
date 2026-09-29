@@ -13,8 +13,12 @@ body {
   background-color: #f0f4f8;
 }
 
-/* Header */
+img {
+  max-width: 100%;
+  height: auto;
+}
 
+/* Header & Flexbox Navigation */
 header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
   color: #ffffff;
@@ -29,13 +33,13 @@ header h1 {
   font-weight: 700;
 }
 
-/* Навігаційне меню */
 header nav ul {
   list-style: none;
   padding: 0;
   margin: 0 0 20px 0;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 20px;
 }
 
@@ -56,6 +60,7 @@ header form {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -91,16 +96,21 @@ header button:hover {
   background-color: #0369a1;
 }
 
-/* Main & Sections */
-
+/* Main & Layout */
 main {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 24px auto;
   padding: 0 20px;
 }
 
-section {
+.top-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   margin-bottom: 32px;
+}
+
+section {
   background-color: #ffffff;
   padding: 20px;
   border-radius: 12px;
@@ -115,34 +125,40 @@ section h2 {
   padding-bottom: 8px;
 }
 
-/* Секція поточної погоди */
-#current img {
-  width: 64px;
-  height: 64px;
-  vertical-align: middle;
-  margin-right: 12px;
+/* Поточна погода*/
+.current-weather {
+  flex: 1;
 }
 
-#current p {
-  display: inline-block;
+.current-weather-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.current-weather img {
+  width: 64px;
+  height: 64px;
+}
+
+.current-weather p {
   font-size: 1.25rem;
   margin: 0;
 }
 
-/* Картки прогнозу (.card) */
+.forecast-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
 
 .card {
   background-color: #f8fafc;
   padding: 16px;
-  margin-bottom: 16px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:last-child {
-  margin-bottom: 0;
 }
 
 .card:hover {
@@ -153,26 +169,24 @@ section h2 {
 .card h3 {
   margin: 0 0 8px 0;
   color: #0369a1;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .card p {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: #0f172a;
 }
 
-/* Aside & Footer */
-
+/* Aside */
 aside {
-  max-width: 900px;
-  margin: 0 auto 32px auto;
   padding: 20px;
   background-color: #e0f2fe;
   border-left: 4px solid #0284c7;
   border-radius: 0 12px 12px 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  flex: 1;
 }
 
 aside h2 {
@@ -188,6 +202,7 @@ aside p {
   line-height: 1.6;
 }
 
+/* Footer */
 footer {
   text-align: center;
   padding: 20px;
@@ -199,4 +214,21 @@ footer {
 
 footer p {
   margin: 0;
+}
+
+@media (min-width: 600px) {
+  .forecast-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .top-wrapper {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .forecast-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
 }
