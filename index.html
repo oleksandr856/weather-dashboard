@@ -28,36 +28,62 @@
   </header>
 
   <main>
-    <section id="current">
-      <h2>Поточна погода</h2>
-      <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
-      <p><strong>Київ:</strong> +21&deg;C, ясно</p>
-    </section>
+    <div class="top-wrapper">
+      <section id="current">
+        <h2>Поточна погода</h2>
+        <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
+        <p><strong>Київ:</strong> +21&deg;C, ясно</p>
+      </section>
+
+      <aside>
+        <h2>Порада дня</h2>
+        <p>Що вдягнути: сьогодні очікується сонячна погода, але ввечері можливе похолодання. Візьміть із собою легку
+          куртку!</p>
+      </aside>
+    </div>
 
     <section id="forecast">
       <h2>Прогноз на тиждень</h2>
 
-      <article class="card">
-        <h3>Вівторок</h3>
-        <p>+18&deg;C, хмарно</p>
-      </article>
+      <div class="forecast-grid">
+        <article class="card">
+          <h3>Понеділок</h3>
+          <p>+19&deg;C</p>
+        </article>
 
-      <article class="card">
-        <h3>Середа</h3>
-        <p>+16&deg;C, дощ</p>
-      </article>
+        <article class="card">
+          <h3>Вівторок</h3>
+          <p>+18&deg;C</p>
+        </article>
 
-      <article class="card">
-        <h3>Четвер</h3>
-        <p>+20&deg;C, мінлива хмарність</p>
-      </article>
+        <article class="card">
+          <h3>Середа</h3>
+          <p>+16&deg;C</p>
+        </article>
+
+        <article class="card">
+          <h3>Четвер</h3>
+          <p>+20&deg;C</p>
+        </article>
+
+        <article class="card">
+          <h3>П'ятниця</h3>
+          <p>+22&deg;C</p>
+        </article>
+
+        <article class="card">
+          <h3>Субота</h3>
+          <p>+21&deg;C</p>
+        </article>
+
+        <article class="card">
+          <h3>Неділя</h3>
+          <p>+17&deg;C</p>
+        </article>
+      </div>
     </section>
   </main>
 
-  <aside>
-    <h2>Порада дня</h2>
-    <p>Що вдягнути: сьогодні очікується сонячна погода, але ввечері можливе похолодання. Візьміть із собою легку куртку!</p>
-  </aside>
 
   <footer>
     <p>Навчальний проєкт «Погодний дашборд» &copy; 2026</p>
