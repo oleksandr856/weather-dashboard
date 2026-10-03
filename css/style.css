@@ -128,22 +128,72 @@ section h2 {
 /* Поточна погода*/
 .current-weather {
   flex: 1;
+  background-color: #1e3a8a;
+  color: #ffffff;
+  border-radius: 12px;
+}
+
+.current-weather h2 {
+  color: #ffffff;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .current-weather-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .current-weather img {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
 }
 
-.current-weather p {
-  font-size: 1.25rem;
+.current-details .city-name {
+  font-size: 1.1rem;
+  margin: 0 0 4px 0;
+  color: #e0f2fe;
+}
+
+.current-details .temp-display {
   margin: 0;
+  font-size: 1.2rem;
+}
+
+.temp-value {
+  font-size: 38px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* 
+  Нечітка вимога: «щоб користувач одразу відчував, тепло чи холодно надворі».
+  Обгрунтування: Температура вище +18 C виділяється теплим помаранчевим,
+  який викликає асоціацію із сонячним теплом. Температура +18 C і нижче виділяється 
+  прохолодним блакитним.
+*/
+.temp-warm {
+  color: #d97706;
+}
+
+.current-weather .temp-warm {
+  color: #fdba74;
+}
+
+.temp-cold {
+  color: #0284c7;
+}
+
+.forecast-desc {
+  margin: 6px 0 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.weather-cond {
+  font-size: 1.1rem;
+  color: #f1f5f9;
 }
 
 .forecast-grid {
@@ -153,17 +203,18 @@ section h2 {
 }
 
 .card {
-  background-color: #f8fafc;
+  background-color: #ffffff;
   padding: 16px;
   border-radius: 12px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.08);
 }
 
 .card h3 {
@@ -172,11 +223,9 @@ section h2 {
   font-size: 1.1rem;
 }
 
-.card p {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
+.card .temp-value {
+  font-size: 28px;
+  margin: 4px 0;
 }
 
 /* Aside */
