@@ -83,7 +83,7 @@ header input[type="text"]:focus {
 
 header button {
   padding: 8px 16px;
-  background-color: #0284c7;
+  background-color: #0369a1;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -93,7 +93,7 @@ header button {
 }
 
 header button:hover {
-  background-color: #0369a1;
+  background-color: #075985;
 }
 
 /* Main & Layout */
