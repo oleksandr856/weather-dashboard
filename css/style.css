@@ -196,6 +196,17 @@ section h2 {
   color: #f1f5f9;
 }
 
+.avg-temp-info {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0369a1;
+  background-color: #e0f2fe;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border-left: 4px solid #0284c7;
+  margin-bottom: 20px;
+}
+
 .forecast-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -215,6 +226,11 @@ section h2 {
 .card:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 14px rgba(0, 0, 0, 0.08);
+}
+
+.card.cold {
+  background-color: #f0f9ff;
+  border: 2px solid #38bdf8;
 }
 
 .card h3 {
