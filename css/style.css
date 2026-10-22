@@ -19,7 +19,7 @@ img {
 }
 
 /* Header & Flexbox Navigation */
-header {
+.site-header {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%);
   color: #ffffff;
   padding: 24px;
@@ -27,13 +27,13 @@ header {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-header h1 {
+.site-header h1 {
   margin: 0 0 16px 0;
   font-size: 2.2rem;
   font-weight: 700;
 }
 
-header nav ul {
+.site-header nav ul {
   list-style: none;
   padding: 0;
   margin: 0 0 20px 0;
@@ -43,20 +43,20 @@ header nav ul {
   gap: 20px;
 }
 
-header nav a {
+.site-header nav a {
   color: #e0f2fe;
   text-decoration: none;
   font-weight: 600;
   transition: color 0.2s ease;
 }
 
-header nav a:hover {
+.site-header nav a:hover {
   color: #ffffff;
   text-decoration: underline;
 }
 
 /* Форма пошуку міста */
-header form {
+.site-header form {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -64,11 +64,11 @@ header form {
   gap: 10px;
 }
 
-header label {
+.site-header label {
   font-size: 0.95rem;
 }
 
-header input[type="text"] {
+.site-header input[type="text"] {
   padding: 8px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
@@ -76,12 +76,12 @@ header input[type="text"] {
   font-size: 0.95rem;
 }
 
-header input[type="text"]:focus {
+.site-header input[type="text"]:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
 }
 
-header button {
+.site-header button {
   padding: 8px 16px;
   background-color: #0369a1;
   color: #ffffff;
@@ -92,7 +92,7 @@ header button {
   transition: background-color 0.2s ease;
 }
 
-header button:hover {
+.site-header button:hover {
   background-color: #075985;
 }
 
@@ -110,14 +110,14 @@ main {
   margin-bottom: 32px;
 }
 
-section {
+.content-section {
   background-color: #ffffff;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-section h2 {
+.content-section h2 {
   margin-top: 0;
   margin-bottom: 16px;
   color: #0f172a;
@@ -245,7 +245,7 @@ section h2 {
 }
 
 /* Aside */
-aside {
+.daily-tip {
   padding: 20px;
   background-color: #e0f2fe;
   border-left: 4px solid #0284c7;
@@ -254,21 +254,21 @@ aside {
   flex: 1;
 }
 
-aside h2 {
+.daily-tip h2 {
   margin-top: 0;
   margin-bottom: 8px;
   color: #0369a1;
   font-size: 1.2rem;
 }
 
-aside p {
+.daily-tip p {
   margin: 0;
   color: #1e293b;
   line-height: 1.6;
 }
 
 /* Footer */
-footer {
+.site-footer {
   text-align: center;
   padding: 20px;
   background-color: #0f172a;
@@ -277,7 +277,7 @@ footer {
   margin-top: 40px;
 }
 
-footer p {
+.site-footer p {
   margin: 0;
 }
 
