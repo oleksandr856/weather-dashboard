@@ -103,6 +103,59 @@ main {
   padding: 0 20px;
 }
 
+.add-weather-form {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.add-weather-title {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #0f172a;
+}
+
+.add-weather-input {
+  padding: 8px 12px;
+  margin-right: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  outline: none;
+}
+
+.add-weather-submit {
+  padding: 8px 16px;
+  background-color: #0369a1;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.warmest-action {
+  margin-bottom: 24px;
+}
+
+.warmest-btn {
+  padding: 8px 16px;
+  background-color: #d97706;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.warmest-result-text {
+  display: inline-block;
+  margin-left: 15px;
+  font-weight: 600;
+  color: #d97706;
+}
+
 .top-wrapper {
   display: flex;
   flex-direction: column;
