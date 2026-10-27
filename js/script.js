@@ -11,16 +11,6 @@ const forecast = [
   { day: 'Нд', temp: -2 }
 ];
 
-// Тестові дані з низькими температурами для перевірки умови "морозно"
-const frostTest = [
-  { day: 'Пн', temp: -5 },
-  { day: 'Вт', temp: 0 },
-  { day: 'Ср', temp: 5 }
-];
-
-// Переводить температуру з градусів Цельсія в градуси Фаренгейта
-const toFahrenheit = celsius => celsius * 9 / 5 + 32;
-
 // Класифікує день за температурою: морозно, прохолодно або тепло
 function classifyTemp(temp) {
   if (temp < 0) {
@@ -29,15 +19,6 @@ function classifyTemp(temp) {
     return 'прохолодно';
   } else {
     return 'тепло';
-  }
-}
-
-// Виводить у консоль кожен день прогнозу з температурою в C і F та класифікацією
-function printForecast(list) {
-  console.log('Кількість днів у прогнозі: ' + list.length);
-  for (const item of list) {
-    const f = toFahrenheit(item.temp).toFixed(1);
-    console.log(`${item.day}: ${item.temp} C = ${f} F, ${classifyTemp(item.temp)}`);
   }
 }
 
@@ -108,8 +89,58 @@ function renderForecast(list) {
 
 renderForecast(forecast);
 
-printForecast(forecast);
-console.log('Середня температура: ' + averageTemp(forecast).toFixed(1) + ' C');
+// Вибираємо форму та її елементи
+const addWeatherForm = document.querySelector('#add-weather-form');
+const tempInput = document.querySelector('#temp-input');
+const warmestBtn = document.querySelector('#warmest-btn');
+const warmestResult = document.querySelector('#warmest-result');
 
-console.log('--- Перевірка умови "морозно" ---');
-printForecast(frostTest);
+// Обробка відправки форми (submit)
+addWeatherForm.addEventListener('submit', (event) => {
+  // Скасувати перезавантаження сторінки
+  event.preventDefault();
+
+  // Зчитати значення полів
+  const dayValue = addWeatherForm.querySelector('#day-input').value.trim();
+  const tempValue = Number(tempInput.value);
+
+  // Зібрати новий об'єкт і додати в масив forecast
+  forecast.push({
+    day: dayValue,
+    temp: tempValue
+  });
+
+  // Перемалювати список карток з оновленим масивом
+  renderForecast(forecast);
+
+  // Очистити форму після успішного додавання
+  addWeatherForm.reset();
+});
+
+// Додаткова клієнтська валідація на подію input
+tempInput.addEventListener('input', () => {
+  const val = Number(tempInput.value);
+  // Валідація, якщо значення поза межами -50...50
+  if (val < -50 || val > 50) {
+    tempInput.setCustomValidity('Температура поза реалістичним діапазоном');
+  } else {
+    tempInput.setCustomValidity(''); // Скидаємо помилку
+  }
+});
+
+// Реалізувати другу подію варіанта (click на кнопку)
+warmestBtn.addEventListener('click', () => {
+  let maxTemp = -Infinity;
+  let maxDay = '';
+  
+  // Шукаємо день з максимальною температурою
+  forecast.forEach(item => {
+    if (item.temp > maxTemp) {
+      maxTemp = item.temp;
+      maxDay = item.day;
+    }
+  });
+  
+  // Виводимо результат
+  warmestResult.textContent = `Найтепліший день: ${maxDay} (+${maxTemp} C)`;
+});
