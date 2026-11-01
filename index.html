@@ -33,8 +33,10 @@
       <h3 class="add-weather-title">Додати новий прогноз</h3>
       <div class="form-inputs">
         <input type="text" name="day" id="day-input" class="add-weather-input" placeholder="День (напр. Пн)" required>
-        <input type="number" name="tempC" id="temp-input" class="add-weather-input" placeholder="Температура C" required>
-        <input type="text" name="description" id="desc-input" class="add-weather-input" placeholder="Опис (необов'язково)">
+        <input type="number" name="tempC" id="temp-input" class="add-weather-input" placeholder="Температура C"
+          required>
+        <input type="text" name="description" id="desc-input" class="add-weather-input"
+          placeholder="Опис (необов'язково)">
         <button type="submit" class="add-weather-submit">Додати запис</button>
       </div>
     </form>
@@ -47,6 +49,8 @@
     <div class="top-wrapper">
       <section id="current" class="content-section current-weather">
         <h2>Поточна погода</h2>
+        <button id="update-btn" class="add-weather-submit" style="margin-bottom: 10px;">Оновити погоду</button>
+        <p id="api-status" style="font-weight: 600; color: #fbbf24; margin: 0 0 15px 0;"></p>
         <div class="current-weather-info">
           <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
           <div class="current-details">

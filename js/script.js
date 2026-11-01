@@ -146,3 +146,68 @@ warmestBtn.addEventListener('click', () => {
   // Виводимо результат
   warmestResult.textContent = `Найтепліший день: ${maxDay} (+${maxTemp} C)`;
 });
+
+const API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&current=temperature_2m,weather_code&timezone=auto';
+
+const weatherCodes = {
+  0: 'ясно',
+  1: 'переважно ясно',
+  2: 'мінлива хмарність',
+  3: 'хмарно',
+  45: 'туман',
+  48: 'туман із памороззю',
+  51: 'мряка',
+  61: 'невеликий дощ',
+  71: 'сніг',
+  95: 'гроза'
+};
+
+const updateBtn = document.querySelector('#update-btn');
+const apiStatus = document.querySelector('#api-status');
+const currentTempValue = document.querySelector('.current-weather .temp-value');
+const currentWeatherCond = document.querySelector('.current-weather .weather-cond');
+
+async function loadData() {
+  // Вмикаємо стан завантаження
+  apiStatus.textContent = 'Завантаження...';
+  apiStatus.style.color = '#fbbf24'; // жовтий колір для завантаження
+  updateBtn.disabled = true;
+
+  try {
+    const response = await fetch(API_URL);
+
+    // Перевірка HTTP-статусу
+    if (!response.ok) {
+      throw new Error(`Помилка сервера: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    console.log(data);
+
+    // Отримуємо температуру та код погоди
+    const temp = data.current.temperature_2m;
+    const code = data.current.weather_code;
+
+    // Оновлюємо DOM
+    currentTempValue.innerHTML = `${temp > 0 ? '+' : ''}${temp}&deg;C`;
+    currentWeatherCond.textContent = weatherCodes[code] || 'невідомо';
+
+    // Очищаємо статус при успіху
+    apiStatus.textContent = '';
+
+  } catch (error) {
+    // Обробка помилки 
+    apiStatus.textContent = 'Не вдалося отримати прогноз погоди';
+    apiStatus.style.color = '#f87171'; // червоний колір для помилки
+    console.error('Помилка API:', error);
+  } finally {
+    // Вимикаємо стан завантаження
+    updateBtn.disabled = false;
+  }
+}
+
+updateBtn.addEventListener('click', loadData);
+
+// Завантажуємо актуальні дані при відкритті сторінки
+loadData();
