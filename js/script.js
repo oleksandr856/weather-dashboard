@@ -74,7 +74,7 @@ function renderForecast(list) {
 
     const desc = document.createElement('p');
     desc.classList.add('forecast-desc');
-    desc.textContent = classifyTemp(item.temp);
+    desc.textContent = item.description ? item.description : classifyTemp(item.temp);
 
     // Додавання елементів у картку та картки в контейнер
     card.append(title, tempVal, desc);
@@ -103,11 +103,13 @@ addWeatherForm.addEventListener('submit', (event) => {
   // Зчитати значення полів
   const dayValue = addWeatherForm.querySelector('#day-input').value.trim();
   const tempValue = Number(tempInput.value);
+  const descValue = addWeatherForm.querySelector('#desc-input').value.trim();
 
   // Зібрати новий об'єкт і додати в масив forecast
   forecast.push({
     day: dayValue,
-    temp: tempValue
+    temp: tempValue,
+    description: descValue
   });
 
   // Перемалювати список карток з оновленим масивом
@@ -132,7 +134,7 @@ tempInput.addEventListener('input', () => {
 warmestBtn.addEventListener('click', () => {
   let maxTemp = -Infinity;
   let maxDay = '';
-  
+
   // Шукаємо день з максимальною температурою
   forecast.forEach(item => {
     if (item.temp > maxTemp) {
@@ -140,7 +142,7 @@ warmestBtn.addEventListener('click', () => {
       maxDay = item.day;
     }
   });
-  
+
   // Виводимо результат
   warmestResult.textContent = `Найтепліший день: ${maxDay} (+${maxTemp} C)`;
 });
