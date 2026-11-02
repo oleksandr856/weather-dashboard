@@ -31,63 +31,76 @@ function averageTemp(list) {
   return sum / list.length;
 }
 
-const forecastGrid = document.querySelector('.forecast-grid');
-const avgTempElement = document.querySelector('#avg-temp');
+function WeatherCard({ day, tempC, description }) {
+  // Локальний реактивний стан для відображення Фаренгейтів
+  const [showFahrenheit, setShowFahrenheit] = React.useState(false);
 
-const staticCards = forecastGrid.querySelectorAll('.card');
-staticCards.forEach(card => card.remove());
+  // Похідне значення: обчислення Фаренгейтів
+  const tempF = Math.round(tempC * 9 / 5 + 32);
 
-/**
- * Функція малювання списку прогнозу на сторінці
- * @param {Array} list - масив об'єктів з прогнозом погоди
- */
-function renderForecast(list) {
-  // Очищення контейнера перед рендером
-  forecastGrid.innerHTML = '';
+  // Стилізація картки та температури
+  const cardClass = `card ${tempC < 0 ? 'cold' : ''}`;
+  const tempClass = `temp-value ${tempC > 18 ? 'temp-warm' : 'temp-cold'}`;
 
-  // Проходимо по масиву даних
-  list.forEach(item => {
-    // Створення article для картки
-    const card = document.createElement('article');
-    card.classList.add('card');
+  const descText = description ? description : classifyTemp(tempC);
 
-    // Встановлення data-атрибута та умовного класу cold
-    card.dataset.temp = item.temp;
-    if (item.temp < 0) {
-      card.classList.add('cold');
-    }
-
-    // Створення елементів для вмісту картки
-    const title = document.createElement('h3');
-    title.textContent = item.day;
-
-    const tempVal = document.createElement('p');
-    tempVal.classList.add('temp-value');
-    tempVal.textContent = (item.temp > 0 ? '+' : '') + item.temp + ' C';
-
-    // Встановлення кольору температури
-    if (item.temp > 18) {
-      tempVal.classList.add('temp-warm');
-    } else {
-      tempVal.classList.add('temp-cold');
-    }
-
-    const desc = document.createElement('p');
-    desc.classList.add('forecast-desc');
-    desc.textContent = item.description ? item.description : classifyTemp(item.temp);
-
-    // Додавання елементів у картку та картки в контейнер
-    card.append(title, tempVal, desc);
-    forecastGrid.append(card);
-  });
-
-  // Оновлення підсумкового елемента із середньою температурою
-  if (avgTempElement) {
-    avgTempElement.textContent = 'Середня температура за період: ' + averageTemp(list).toFixed(1) + ' C';
-  }
+  return (
+    <article className={cardClass} onClick={() => setShowFahrenheit(!showFahrenheit)}>
+      <h3>{day}</h3>
+      <p className={tempClass}>
+        {tempC > 0 ? '+' : ''}{tempC}°C
+        {/* Показуємо Фаренгейти лише якщо showFahrenheit === true */}
+        {showFahrenheit && <span style={{ fontSize: '20px', color: '#64748b' }}> / {tempF}°F</span>}
+      </p>
+      <p className="forecast-desc">{descText}</p>
+    </article>
+  );
 }
 
-renderForecast(forecast);
+let updateReactState = null;
+
+function App() {
+  // Переносимо масив у реактивний стан, початкове значення масив forecast
+  const [items, setItems] = React.useState(forecast);
+
+  // Передаємо функцію оновлення назовні, щоб звичайна HTML-форма могла додати картку
+  React.useEffect(() => {
+    updateReactState = (newArray) => {
+      setItems([...newArray]);
+    };
+  }, []);
+
+  return (
+    <React.Fragment>
+      {/* Рендер циклом через map() з передачею props */}
+      {items.map((item, index) => (
+        <WeatherCard
+          key={item.day + index}
+          day={item.day}
+          tempC={item.temp}
+          description={item.description}
+        />
+      ))}
+    </React.Fragment>
+  );
+}
+
+// Знаходимо підготовлений контейнер і монтуємо туди React-додаток
+const forecastGrid = document.querySelector('.forecast-grid');
+if (forecastGrid) {
+  // Видаляємо всі статичні картки, якщо вони були в HTML (React відмалює їх сам)
+  const staticCards = forecastGrid.querySelectorAll('.card');
+  staticCards.forEach(card => card.remove());
+
+  const root = ReactDOM.createRoot(forecastGrid);
+  root.render(<App />);
+}
+
+// Встановлюємо середню температуру одразу при завантаженні
+const avgTempElement = document.querySelector('#avg-temp');
+if (avgTempElement) {
+  avgTempElement.textContent = 'Середня температура за період: ' + averageTemp(forecast).toFixed(1) + ' C';
+}
 
 // Вибираємо форму та її елементи
 const addWeatherForm = document.querySelector('#add-weather-form');
@@ -96,39 +109,50 @@ const warmestBtn = document.querySelector('#warmest-btn');
 const warmestResult = document.querySelector('#warmest-result');
 
 // Обробка відправки форми (submit)
-addWeatherForm.addEventListener('submit', (event) => {
-  // Скасувати перезавантаження сторінки
-  event.preventDefault();
+if (addWeatherForm) {
+  addWeatherForm.addEventListener('submit', (event) => {
+    // Скасувати перезавантаження сторінки
+    event.preventDefault();
 
-  // Зчитати значення полів
-  const dayValue = addWeatherForm.querySelector('#day-input').value.trim();
-  const tempValue = Number(tempInput.value);
-  const descValue = addWeatherForm.querySelector('#desc-input').value.trim();
+    // Зчитати значення полів
+    const dayValue = addWeatherForm.querySelector('#day-input').value.trim();
+    const tempValue = Number(tempInput.value);
+    const descValue = addWeatherForm.querySelector('#desc-input').value.trim();
 
-  // Зібрати новий об'єкт і додати в масив forecast
-  forecast.push({
-    day: dayValue,
-    temp: tempValue,
-    description: descValue
+    // Зібрати новий об'єкт і додати в глобальний масив forecast
+    forecast.push({
+      day: dayValue,
+      temp: tempValue,
+      description: descValue
+    });
+
+    // Оновлюємо React-стан
+    if (updateReactState) {
+      updateReactState(forecast);
+    }
+
+    // Оновлення підсумкового елемента із середньою температурою
+    if (avgTempElement) {
+      avgTempElement.textContent = 'Середня температура за період: ' + averageTemp(forecast).toFixed(1) + ' C';
+    }
+
+    // Очистити форму після успішного додавання
+    addWeatherForm.reset();
   });
-
-  // Перемалювати список карток з оновленим масивом
-  renderForecast(forecast);
-
-  // Очистити форму після успішного додавання
-  addWeatherForm.reset();
-});
+}
 
 // Додаткова клієнтська валідація на подію input
-tempInput.addEventListener('input', () => {
-  const val = Number(tempInput.value);
-  // Валідація, якщо значення поза межами -50...50
-  if (val < -50 || val > 50) {
-    tempInput.setCustomValidity('Температура поза реалістичним діапазоном');
-  } else {
-    tempInput.setCustomValidity(''); // Скидаємо помилку
-  }
-});
+if (tempInput) {
+  tempInput.addEventListener('input', () => {
+    const val = Number(tempInput.value);
+    // Валідація, якщо значення поза межами -50...50
+    if (val < -50 || val > 50) {
+      tempInput.setCustomValidity('Температура поза реалістичним діапазоном');
+    } else {
+      tempInput.setCustomValidity(''); // Скидаємо помилку
+    }
+  });
+}
 
 // Реалізувати другу подію варіанта (click на кнопку)
 warmestBtn.addEventListener('click', () => {

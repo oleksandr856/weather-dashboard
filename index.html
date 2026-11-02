@@ -7,7 +7,10 @@
   <title>Погодний дашборд</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="css/style.css">
-  <script src="js/script.js" defer></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" src="js/script.js" defer></script>
 </head>
 
 <body>
@@ -72,47 +75,6 @@
       <h2>Прогноз на тиждень</h2>
       <p id="avg-temp" class="avg-temp-info"></p>
       <div class="forecast-grid">
-        <article class="card">
-          <h3>Понеділок</h3>
-          <p class="temp-value temp-warm">+19&deg;C</p>
-          <p class="forecast-desc">сонячно</p>
-        </article>
-
-        <article class="card">
-          <h3>Вівторок</h3>
-          <p class="temp-value temp-cold">+18&deg;C</p>
-          <p class="forecast-desc">хмарно з проясненнями</p>
-        </article>
-
-        <article class="card">
-          <h3>Середа</h3>
-          <p class="temp-value temp-cold">+16&deg;C</p>
-          <p class="forecast-desc">невеликий дощ</p>
-        </article>
-
-        <article class="card">
-          <h3>Четвер</h3>
-          <p class="temp-value temp-warm">+20&deg;C</p>
-          <p class="forecast-desc">мінлива хмарність</p>
-        </article>
-
-        <article class="card">
-          <h3>П'ятниця</h3>
-          <p class="temp-value temp-warm">+22&deg;C</p>
-          <p class="forecast-desc">ясно, без опадів</p>
-        </article>
-
-        <article class="card">
-          <h3>Субота</h3>
-          <p class="temp-value temp-warm">+21&deg;C</p>
-          <p class="forecast-desc">малохмарно</p>
-        </article>
-
-        <article class="card">
-          <h3>Неділя</h3>
-          <p class="temp-value temp-cold">+17&deg;C</p>
-          <p class="forecast-desc">короткочасний дощ</p>
-        </article>
       </div>
     </section>
   </main>
