@@ -100,7 +100,13 @@ function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDel
       <p className="forecast-desc" style={{margin: '5px 0'}}>{descText}</p>
       {/* Виведення часу останнього оновлення */}
       <p style={{fontSize: '11px', color: '#94a3b8', margin: '5px 0'}}>Оновлено: {time}</p>
-
+      <button
+        className="add-weather-submit"
+        style={{ marginTop: '10px', marginRight: '6px', fontSize: '13px', padding: '4px 8px' }}
+        onClick={() => setWeatherIcon(weatherCode, name)}
+      >
+        Показати на іконці
+      </button>
       {/* Кнопка видалення запису, яка викликає функцію onDelete з передачею id */}
       <button
         className="add-weather-submit"
@@ -331,6 +337,195 @@ if (forecastGrid) {
   root.render(<App />);
 }
 
+const weatherCanvas = document.querySelector('#weather-canvas');
+const wctx = weatherCanvas.getContext('2d'); // 2D-контекст для малювання
+const iconCaption = document.querySelector('#icon-caption');
+const toggleAnimBtn = document.querySelector('#toggle-anim-btn');
+ 
+let iconType = 'sun';        // тип іконки: sun, partly, cloud, rain, snow, storm
+let sunAngle = 0;            // поточний кут обертання сонця
+let particles = [];          // краплі дощу або сніжинки
+let flashFrames = 0;         // скільки кадрів ще триває спалах блискавки
+let animationId = null;      // id запиту requestAnimationFrame
+let animationRunning = true; // чи ввімкнена анімація користувачем
+let canvasVisible = true;    // чи видно полотно на екрані
+let cloudPhase = 0;          // фаза коливання хмари
+
+// Кількість частинок залежить від коду погоди (інтенсивність опадів)
+const particleCount = { 51: 10, 61: 22, 71: 18, 95: 36 };
+
+// Перетворює код погоди з API або з бази даних на тип іконки
+function getIconType(code) {
+  if (code === 0 || code === 1) return 'sun';
+  if (code === 2) return 'partly';
+  if (code === 51 || code === 61) return 'rain';
+  if (code === 71) return 'snow';
+  if (code === 95) return 'storm';
+  return 'cloud'; // коди 3, 45, 48 та невідомі коди
+}
+
+// Створює краплі або сніжинки під хмарою
+function createParticles(code) {
+  const count = particleCount[code] || 0;
+  particles = [];
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x: 25 + Math.random() * 70,
+      y: 58 + Math.random() * 55,
+      speed: iconType === 'snow' ? 0.4 + Math.random() * 0.5 : 2 + Math.random() * 2
+    });
+  }
+}
+
+// Головна функція: бере код погоди з даних і налаштовує стан анімації
+function setWeatherIcon(code, label) {
+  iconType = getIconType(code);
+  createParticles(code);
+  iconCaption.textContent =
+    `Іконка: ${weatherCodes[code] || 'невідомо'} (${label})`;
+  if (!animationRunning) drawFrame(); // на паузі малюємо один статичний кадр
+}
+
+// Заповнене коло
+function fillCircle(x, y, r, color) {
+  wctx.fillStyle = color;
+  wctx.beginPath();
+  wctx.arc(x, y, r, 0, Math.PI * 2);
+  wctx.fill();
+}
+
+// Сонце: диск і 8 променів, які обертаються навколо центру
+function drawSun(cx, cy, r) {
+  wctx.save();               // зберігаємо систему координат
+  wctx.translate(cx, cy);
+  wctx.rotate(sunAngle);
+  wctx.strokeStyle = '#fbbf24';
+  wctx.lineWidth = 3;
+  wctx.lineCap = 'round';
+  for (let i = 0; i < 8; i++) {
+    wctx.beginPath();
+    wctx.moveTo(r + 6, 0);
+    wctx.lineTo(r + 15, 0);
+    wctx.stroke();
+    wctx.rotate(Math.PI / 4);
+  }
+  wctx.restore();            // повертаємо координати до початкових
+  fillCircle(cx, cy, r, '#fbbf24');
+}
+
+// Хмара з трьох кіл і прямокутника, повільно коливається вліво-вправо
+function drawCloud(cx, cy, color) {
+  const x = cx + Math.sin(cloudPhase) * 5; // зсув хмари
+  fillCircle(x - 18, cy + 4, 14, color);
+  fillCircle(x, cy - 6, 18, color);
+  fillCircle(x + 18, cy + 4, 14, color);
+  wctx.fillStyle = color;
+  wctx.fillRect(x - 18, cy + 4, 36, 14);
+}
+
+// Блискавка для грози
+function drawLightning() {
+  wctx.fillStyle = '#fde047';
+  wctx.beginPath();
+  wctx.moveTo(64, 52);
+  wctx.lineTo(52, 80);
+  wctx.lineTo(60, 80);
+  wctx.lineTo(54, 106);
+  wctx.lineTo(74, 72);
+  wctx.lineTo(65, 72);
+  wctx.closePath();
+  wctx.fill();
+}
+
+// Краплі дощу (лінії) або сніжинки (кола)
+function drawParticles() {
+  particles.forEach(p => {
+    if (iconType === 'snow') {
+      fillCircle(p.x, p.y, 2.5, '#ffffff');
+    } else {
+      wctx.strokeStyle = '#38bdf8';
+      wctx.lineWidth = 2;
+      wctx.beginPath();
+      wctx.moveTo(p.x, p.y);
+      wctx.lineTo(p.x - 2, p.y + 8);
+      wctx.stroke();
+    }
+  });
+}
+
+// Малює один кадр залежно від поточного типу іконки
+function drawFrame() {
+  wctx.clearRect(0, 0, weatherCanvas.width, weatherCanvas.height);
+  if (iconType === 'sun') {
+    drawSun(60, 60, 20);
+  } else if (iconType === 'partly') {
+    drawSun(80, 42, 16);
+    drawCloud(52, 72, '#e2e8f0');
+  } else if (iconType === 'cloud') {
+    drawCloud(60, 60, '#cbd5e1');
+  } else {
+    drawCloud(60, 38, iconType === 'storm' ? '#64748b' : '#94a3b8');
+    if (iconType === 'storm' && flashFrames > 0) drawLightning();
+    drawParticles();
+  }
+}
+
+// Оновлює стан анімації (кут сонця, позиції крапель, спалахи)
+function updateState() {
+  cloudPhase += 0.03;
+  sunAngle += 0.02;
+  particles.forEach(p => {
+    p.y += p.speed;
+    if (p.y > weatherCanvas.height) { // частинка впала - повертаємо вгору
+      p.y = 58;
+      p.x = 25 + Math.random() * 70;
+    }
+  });
+  if (iconType === 'storm') {
+    if (flashFrames > 0) flashFrames--;
+    else if (Math.random() < 0.01) flashFrames = 6;
+  }
+}
+
+// Цикл анімації: оновити стан, перемалювати кадр, запросити наступний
+function animate() {
+  updateState();
+  drawFrame();
+  animationId = requestAnimationFrame(animate);
+}
+
+function startAnimation() {
+  if (animationId === null) animationId = requestAnimationFrame(animate);
+}
+
+function stopAnimation() {
+  if (animationId !== null) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+}
+
+// Кнопка старт/стоп
+toggleAnimBtn.addEventListener('click', () => {
+  animationRunning = !animationRunning;
+  toggleAnimBtn.textContent =
+    animationRunning ? 'Зупинити анімацію' : 'Запустити анімацію';
+  if (animationRunning && canvasVisible) startAnimation();
+  else stopAnimation();
+});
+
+// Зупиняємо анімацію, коли полотно прокручено за межі екрана
+const canvasObserver = new IntersectionObserver((entries) => {
+  canvasVisible = entries[0].isIntersecting;
+  if (canvasVisible && animationRunning) startAnimation();
+  else stopAnimation();
+});
+canvasObserver.observe(weatherCanvas);
+
+// Початковий стан до відповіді API
+setWeatherIcon(0, 'Київ, початкове значення');
+startAnimation();
+
 const API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&current=temperature_2m,weather_code&timezone=auto';
 
 const updateBtn = document.querySelector('#update-btn');
@@ -363,6 +558,8 @@ async function loadData() {
     // Оновлюємо DOM
     currentTempValue.innerHTML = `${temp > 0 ? '+' : ''}${temp}&deg;C`;
     currentWeatherCond.textContent = weatherCodes[code] || 'невідомо';
+    // Оновлюємо Canvas-іконку за новими даними з API
+    setWeatherIcon(code, 'Київ, поточна погода');
 
     // Очищаємо статус при успіху
     apiStatus.textContent = '';

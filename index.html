@@ -36,18 +36,24 @@
 
     <div class="warmest-action"></div>
 
-    <div class="top-wrapper">
+        <div class="top-wrapper">
       <section id="current" class="content-section current-weather">
         <h2>Поточна погода</h2>
         <button id="update-btn" class="add-weather-submit" style="margin-bottom: 10px;">Оновити погоду</button>
         <p id="api-status" style="font-weight: 600; color: #fbbf24; margin: 0 0 15px 0;"></p>
         <div class="current-weather-info">
-          <img src="assets/img/sunny.svg" alt="Сонячно, без опадів">
+          <div class="weather-icon-box">
+            <canvas id="weather-canvas" class="weather-canvas" width="120" height="120"></canvas>
+            <p id="icon-caption" class="icon-caption"></p>
+          </div>
           <div class="current-details">
             <p class="city-name">Київ</p>
             <p class="temp-display"><span class="temp-value temp-warm">+21&deg;C</span>, <span
                 class="weather-cond">ясно</span></p>
           </div>
+        </div>
+        <div class="anim-controls">
+          <button id="toggle-anim-btn" class="add-weather-submit">Зупинити анімацію</button>
         </div>
       </section>
 
