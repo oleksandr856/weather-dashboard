@@ -57,27 +57,49 @@ async function deleteCityFromDB(id) {
   });
 }
 
-function WeatherCard({ id, day, tempC, description, onDelete }) {
+const weatherCodes = {
+  0: 'ясно',
+  1: 'переважно ясно',
+  2: 'мінлива хмарність',
+  3: 'хмарно',
+  45: 'туман',
+  48: 'туман із памороззю',
+  51: 'мряка',
+  61: 'невеликий дощ',
+  71: 'сніг',
+  95: 'гроза'
+};
+function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDelete }) {
   // Локальний реактивний стан для відображення Фаренгейтів
   const [showFahrenheit, setShowFahrenheit] = React.useState(false);
 
   // Похідне значення: обчислення Фаренгейтів
-  const tempF = Math.round(tempC * 9 / 5 + 32);
+  const tempF = Math.round(temperature * 9 / 5 + 32);
 
   // Стилізація картки та температури
-  const cardClass = `card ${tempC < 0 ? 'cold' : ''}`;
-  const tempClass = `temp-value ${tempC > 18 ? 'temp-warm' : 'temp-cold'}`;
-  const descText = description ? description : classifyTemp(tempC);
+  const cardClass = `card ${temperature < 0 ? 'cold' : ''}`;
+  const tempClass = `temp-value ${temperature > 18 ? 'temp-warm' : 'temp-cold'}`;
+  
+  // Отримуємо опис з об'єкта weatherCodes
+  const descText = weatherCodes[weatherCode] || 'невідомо';
 
   return (
     <article className={cardClass}>
-      <h3 onClick={() => setShowFahrenheit(!showFahrenheit)} style={{ cursor: 'pointer' }}>{day}</h3>
-      <p className={tempClass} onClick={() => setShowFahrenheit(!showFahrenheit)} style={{ cursor: 'pointer' }}>
-        {tempC > 0 ? '+' : ''}{tempC}°C
+      <h3 onClick={() => setShowFahrenheit(!showFahrenheit)} style={{ cursor: 'pointer', margin: '0 0 5px 0' }}>
+        {name}
+      </h3>
+      {/* Виведення координат міста */}
+      <div style={{fontSize: '12px', color: '#64748b', marginBottom: '8px'}}>
+        Шир: {lat}, Довг: {lon}
+      </div>
+      <p className={tempClass} onClick={() => setShowFahrenheit(!showFahrenheit)} style={{ cursor: 'pointer', margin: '5px 0' }}>
+        {temperature > 0 ? '+' : ''}{temperature}°C
         {/* Показуємо Фаренгейти лише якщо showFahrenheit === true */}
         {showFahrenheit && <span style={{ fontSize: '20px', color: '#64748b' }}> / {tempF}°F</span>}
       </p>
-      <p className="forecast-desc">{descText}</p>
+      <p className="forecast-desc" style={{margin: '5px 0'}}>{descText}</p>
+      {/* Виведення часу останнього оновлення */}
+      <p style={{fontSize: '11px', color: '#94a3b8', margin: '5px 0'}}>Оновлено: {time}</p>
 
       {/* Кнопка видалення запису, яка викликає функцію onDelete з передачею id */}
       <button
@@ -117,11 +139,16 @@ function loadFromLocalStorage() {
 function App() {
   // Стан для списку міст (спочатку порожній, завантажиться з БД)
   const [items, setItems] = React.useState([]);
+  
+  // Стан для відображення помилки бази даних в інтерфейсі
+  const [dbError, setDbError] = React.useState(''); 
 
-  // Стан для форми
-  const [dayInput, setDayInput] = React.useState('');
+  // Нова модель даних для форми (місто, координати, температура, код погоди)
+  const [nameInput, setNameInput] = React.useState('');
+  const [latInput, setLatInput] = React.useState('');
+  const [lonInput, setLonInput] = React.useState('');
   const [tempInput, setTempInput] = React.useState('');
-  const [descInput, setDescInput] = React.useState('');
+  const [codeInput, setCodeInput] = React.useState('0');
 
   // Стан для результату найтеплішого дня
   const [warmestResult, setWarmestResult] = React.useState('');
@@ -132,23 +159,27 @@ function App() {
       try {
         let dbItems = await getCitiesFromDB();
 
-        // Якщо база порожня, перевіряємо чи є щось у localStorage для міграції
-        if (dbItems.length === 0) {
+        // Якщо база порожня, перевіряємо чи є щось у localStorage для міграції та чи не була вона вже виконана
+        if (dbItems.length === 0 && localStorage.getItem('migrated') !== 'true') {
           const localItems = loadFromLocalStorage();
           if (localItems.length > 0) {
             console.log('Виконується міграція даних з localStorage в IndexedDB...');
             for (let item of localItems) {
               await addCityToDB(item);
             }
-            dbItems = localItems;
-            localStorage.setItem('migrated', 'true');
+            // Отримуємо актуальні дані після міграції
+            dbItems = await getCitiesFromDB();
           }
+          // Встановлюємо прапорець після успішної міграції
+          localStorage.setItem('migrated', 'true');
         }
 
         // Оновлюємо стан React завантаженими даними
         setItems(dbItems);
       } catch (error) {
         console.error('Помилка роботи з IndexedDB:', error);
+        // Виводимо помилку в інтерфейс, якщо БД недоступна
+        setDbError('Помилка бази даних: не вдалося завантажити збережені міста.');
       }
     }
     loadData();
@@ -156,47 +187,64 @@ function App() {
 
   // Похідне значення: середня температура
   const averageTemp = items.length
-    ? (items.reduce((sum, item) => sum + item.temp, 0) / items.length).toFixed(1)
+    ? (items.reduce((sum, item) => sum + item.temperature, 0) / items.length).toFixed(1)
     : 0;
 
   // Асинхронний обробник додавання нового міста
   const handleAddWeather = async (e) => {
     e.preventDefault();
-    if (!dayInput || tempInput === '') return;
+    if (!nameInput || !latInput || !lonInput || tempInput === '') return;
 
+    // Створюємо об'єкт за новою моделлю даних
     const newItem = {
       id: Date.now(), // Унікальний ID на основі поточного часу
-      day: dayInput.trim(),
-      temp: Number(tempInput),
-      description: descInput.trim()
+      name: nameInput.trim(),
+      lat: Number(latInput),
+      lon: Number(lonInput),
+      temperature: Number(tempInput),
+      weatherCode: Number(codeInput),
+      time: new Date().toLocaleTimeString() // фіксуємо час створення/оновлення
     };
 
-    // Зберігаємо запис у базу даних IndexedDB
-    await addCityToDB(newItem);
+    try {
+      // Зберігаємо запис у базу даних IndexedDB
+      await addCityToDB(newItem);
 
-    // Оновлюємо масив у React
-    const updatedItems = [...items, newItem];
-    setItems(updatedItems);
+      // Оновлюємо масив у React
+      const updatedItems = [...items, newItem];
+      setItems(updatedItems);
 
-    // Також дублюємо в localStorage для історії міграцій/надійності
-    saveToLocalStorage(updatedItems);
-    // Очищаємо форму
-    setDayInput('');
-    setTempInput('');
-    setDescInput('');
+      // Також дублюємо в localStorage для історії міграцій/надійності
+      saveToLocalStorage(updatedItems);
+      
+      // Очищаємо форму
+      setNameInput('');
+      setLatInput('');
+      setLonInput('');
+      setTempInput('');
+      setCodeInput('0');
+      setDbError(''); // очищаємо помилку, якщо запис пройшов успішно
+    } catch (error) {
+      setDbError('Помилка бази даних: не вдалося зберегти нове місто.');
+    }
   };
 
   // Асинхронний обробник видалення міста
   const handleDelete = async (id) => {
-    // Видаляємо запис з бази даних IndexedDB за його id
-    await deleteCityFromDB(id);
+    try {
+      // Видаляємо запис з бази даних IndexedDB за його id
+      await deleteCityFromDB(id);
 
-    // Оновлюємо масив у React (залишаємо всі елементи, крім видаленого)
-    const updatedItems = items.filter(item => item.id !== id);
-    setItems(updatedItems);
+      // Оновлюємо масив у React (залишаємо всі елементи, крім видаленого)
+      const updatedItems = items.filter(item => item.id !== id);
+      setItems(updatedItems);
 
-    // Оновлюємо localStorage
-    saveToLocalStorage(updatedItems);
+      // Оновлюємо localStorage
+      saveToLocalStorage(updatedItems);
+      setDbError('');
+    } catch (error) {
+      setDbError('Помилка бази даних: не вдалося видалити запис.');
+    }
   };
 
   // Обробник пошуку найтеплішого дня
@@ -204,23 +252,32 @@ function App() {
     if (items.length === 0) return;
     let maxItem = items[0];
     items.forEach(item => {
-      if (item.temp > maxItem.temp) {
-        maxItem = item;
-      }
+      if (item.temperature > maxItem.temperature) maxItem = item;
     });
-    setWarmestResult(`Найтепліший запис: ${maxItem.day} (+${maxItem.temp} C)`);
+    setWarmestResult(`Найтепліше: ${maxItem.name} (+${maxItem.temperature} C)`);
   };
 
   return (
     <React.Fragment>
+      {/* Виведення помилки IndexedDB на екран */}
+      {dbError && ReactDOM.createPortal(
+        <div style={{backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontWeight: 'bold'}}>
+          {dbError}
+        </div>,
+        document.querySelector('.top-wrapper') // або інший існуючий контейнер
+      )}
+
       {/* Рендер карток */}
       {items.map(item => (
         <WeatherCard
           key={item.id}
           id={item.id}
-          day={item.day}
-          tempC={item.temp}
-          description={item.description}
+          name={item.name}
+          lat={item.lat}
+          lon={item.lon}
+          temperature={item.temperature}
+          weatherCode={item.weatherCode}
+          time={item.time}
           onDelete={handleDelete} // Передаємо функцію видалення в кожну картку
         />
       ))}
@@ -234,10 +291,17 @@ function App() {
       {/* Передаємо форму через портал у існуючий DOM-елемент */}
       {ReactDOM.createPortal(
         <React.Fragment>
-          <h3 className="add-weather-title">Додати новий прогноз</h3>          
-          <div className="form-inputs">
-            <input type="text" className="add-weather-input" placeholder="День (напр. Пн)" value={dayInput} onChange={e => setDayInput(e.target.value)} required />            <input type="number" className="add-weather-input" placeholder="Температура C" value={tempInput} onChange={e => setTempInput(e.target.value)} min="-50" max="50" required />
-            <input type="text" className="add-weather-input" placeholder="Опис (необов'язково)" value={descInput} onChange={e => setDescInput(e.target.value)} />
+          <h3 className="add-weather-title">Зберегти нове місто</h3>
+          <div className="form-inputs" style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
+            <input type="text" className="add-weather-input" placeholder="Місто (напр. Київ)" value={nameInput} onChange={e => setNameInput(e.target.value)} required />
+            <input type="number" step="0.01" className="add-weather-input" placeholder="Широта (lat)" value={latInput} onChange={e => setLatInput(e.target.value)} required style={{width: '120px'}}/>
+            <input type="number" step="0.01" className="add-weather-input" placeholder="Довгота (lon)" value={lonInput} onChange={e => setLonInput(e.target.value)} required style={{width: '120px'}}/>
+            <input type="number" className="add-weather-input" placeholder="Темп. C" value={tempInput} onChange={e => setTempInput(e.target.value)} min="-50" max="50" required style={{width: '100px'}}/>
+            <select className="add-weather-input" value={codeInput} onChange={e => setCodeInput(e.target.value)}>
+              {Object.entries(weatherCodes).map(([code, desc]) => (
+                <option key={code} value={code}>{desc}</option>
+              ))}
+            </select>
             <button type="submit" className="add-weather-submit" onClick={handleAddWeather}>Додати запис</button>
           </div>
         </React.Fragment>,
@@ -268,19 +332,6 @@ if (forecastGrid) {
 }
 
 const API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&current=temperature_2m,weather_code&timezone=auto';
-
-const weatherCodes = {
-  0: 'ясно',
-  1: 'переважно ясно',
-  2: 'мінлива хмарність',
-  3: 'хмарно',
-  45: 'туман',
-  48: 'туман із памороззю',
-  51: 'мряка',
-  61: 'невеликий дощ',
-  71: 'сніг',
-  95: 'гроза'
-};
 
 const updateBtn = document.querySelector('#update-btn');
 const apiStatus = document.querySelector('#api-status');
