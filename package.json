@@ -1,0 +1,24 @@
+{
+  "name": "weather-dashboard",
+  "version": "1.0.0",
+  "description": "Навчальний вебзастосунок для перегляду поточної погоди та прогнозу на тиждень для обраного міста.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oleksandr856/weather-dashboard.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/oleksandr856/weather-dashboard/issues"
+  },
+  "homepage": "https://github.com/oleksandr856/weather-dashboard#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}

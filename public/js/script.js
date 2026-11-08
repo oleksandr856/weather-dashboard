@@ -68,6 +68,21 @@ async function getCityByIdFromDB(id) {
   });
 }
 
+// Отримує список міст з локального сервера
+async function fetchCitiesFromServer() {
+  const response = await fetch('/api/cities');
+  if (!response.ok) throw new Error('Помилка сервера: ' + response.status);
+  return await response.json();
+}
+
+// Отримує одне місто з сервера. Якщо сервер відповів 404 - повертає null
+async function fetchCityFromServer(id) {
+  const response = await fetch('/api/cities/' + id);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error('Помилка сервера: ' + response.status);
+  return await response.json();
+}
+
 const weatherCodes = {
   0: 'ясно',
   1: 'переважно ясно',
@@ -270,6 +285,45 @@ function CitiesPage() {
     }
   };
 
+  // Стан для повідомлення про результат завантаження із сервера
+  const [serverMsg, setServerMsg] = React.useState('');
+
+  // Завантажує міста з локального сервера й додає ті, яких ще немає в базі
+  const handleLoadFromServer = async () => {
+    try {
+      const serverCities = await fetchCitiesFromServer();
+      const added = [];
+      for (const c of serverCities) {
+        if (items.some(item => item.id === c.id)) continue;
+        // Сервер віддає лише id, name, lat, lon - погоду беремо з Open-Meteo
+        const response = await fetch(buildApiUrl(c.lat, c.lon));
+        if (!response.ok) throw new Error('Помилка сервера: ' + response.status);
+        const data = await response.json();
+        const newItem = {
+          id: c.id,
+          name: c.name,
+          lat: c.lat,
+          lon: c.lon,
+          temperature: data.current.temperature_2m,
+          weatherCode: data.current.weather_code,
+          time: new Date().toLocaleTimeString()
+        };
+        await addCityToDB(newItem);
+        added.push(newItem);
+      }
+      const updatedItems = [...items, ...added];
+      setItems(updatedItems);
+      saveToLocalStorage(updatedItems);
+      setDbError('');
+      setServerMsg('Додано міст із сервера: ' + added.length);
+    } catch (error) {
+      console.error('Помилка завантаження з сервера:', error);
+      setServerMsg('');
+      setDbError('Не вдалося завантажити міста із сервера. ' +
+        'Перевірте, чи запущено сервер.');
+    }
+  };
+
   // Обробник пошуку найтеплішого дня
   const findWarmest = () => {
     if (items.length === 0) return;
@@ -297,6 +351,14 @@ function CitiesPage() {
           <button type="submit" className="add-weather-submit">Додати запис</button>
         </div>
       </form>
+
+      {/* Кнопка завантаження списку міст з локального сервера */}
+      <div className="warmest-action">
+        <button type="button" className="add-weather-submit" onClick={handleLoadFromServer}>
+          Завантажити міста із сервера
+        </button>
+        <p className="warmest-result-text">{serverMsg}</p>
+      </div>
 
       {/* Кнопка пошуку найтеплішого запису і текст результату */}
       <div className="warmest-action">
@@ -723,18 +785,21 @@ async function renderCityDetail(params, myRender) {
     return;
   }
   try {
-    const city = await getCityByIdFromDB(id);
-    if (myRender !== renderCounter) return;// користувач уже пішов зі сторінки
+    let city = await getCityByIdFromDB(id);
+    // Якщо в базі міста немає питаємо локальний сервер
+    if (!city) city = await fetchCityFromServer(id);
+    if (myRender !== renderCounter) return; // користувач уже пішов зі сторінки
     if (!city) {
-      renderNotFound('Місто з id ' + id + ' не знайдено в базі даних.');
+      renderNotFound('Місто з id ' + id +
+        ' не знайдено ні в базі даних, ні на сервері.');
       return;
     }
     saveLastCity(city);
     renderForecastPage(city, city.weatherCode);
   } catch (error) {
-    console.error('Помилка IndexedDB:', error);
+    console.error('Помилка отримання міста:', error);
     if (myRender === renderCounter) {
-      renderNotFound('Не вдалося прочитати дані з бази даних.');
+      renderNotFound('Не вдалося отримати дані міста.');
     }
   }
 }
