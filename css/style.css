@@ -7,10 +7,18 @@
 body {
   margin: 0;
   padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
   color: #1e293b;
   background-color: #f0f4f8;
+}
+
+.main-content {
+  width: 100%;
+  flex: 1; 
 }
 
 img {
@@ -357,6 +365,30 @@ main {
 
 .anim-controls {
   margin-top: 14px;
+}
+
+/* Стилі для SPA-навігації */
+.site-header nav a.active {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+a.add-weather-submit {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.not-found {
+  text-align: center;
+}
+
+.db-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-weight: bold;
 }
 
 

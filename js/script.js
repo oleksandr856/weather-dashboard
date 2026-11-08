@@ -57,6 +57,17 @@ async function deleteCityFromDB(id) {
   });
 }
 
+// Читає один запис зі сховища cities за його ключем 
+async function getCityByIdFromDB(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('cities', 'readonly');
+    const request = tx.objectStore('cities').get(id);
+    request.onsuccess = () => resolve(request.result); // undefined, якщо немає
+    request.onerror = () => reject(request.error);
+  });
+}
+
 const weatherCodes = {
   0: 'ясно',
   1: 'переважно ясно',
@@ -69,6 +80,7 @@ const weatherCodes = {
   71: 'сніг',
   95: 'гроза'
 };
+
 function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDelete }) {
   // Локальний реактивний стан для відображення Фаренгейтів
   const [showFahrenheit, setShowFahrenheit] = React.useState(false);
@@ -79,7 +91,7 @@ function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDel
   // Стилізація картки та температури
   const cardClass = `card ${temperature < 0 ? 'cold' : ''}`;
   const tempClass = `temp-value ${temperature > 18 ? 'temp-warm' : 'temp-cold'}`;
-  
+
   // Отримуємо опис з об'єкта weatherCodes
   const descText = weatherCodes[weatherCode] || 'невідомо';
 
@@ -89,7 +101,7 @@ function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDel
         {name}
       </h3>
       {/* Виведення координат міста */}
-      <div style={{fontSize: '12px', color: '#64748b', marginBottom: '8px'}}>
+      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>
         Шир: {lat}, Довг: {lon}
       </div>
       <p className={tempClass} onClick={() => setShowFahrenheit(!showFahrenheit)} style={{ cursor: 'pointer', margin: '5px 0' }}>
@@ -97,16 +109,17 @@ function WeatherCard({ id, name, lat, lon, temperature, weatherCode, time, onDel
         {/* Показуємо Фаренгейти лише якщо showFahrenheit === true */}
         {showFahrenheit && <span style={{ fontSize: '20px', color: '#64748b' }}> / {tempF}°F</span>}
       </p>
-      <p className="forecast-desc" style={{margin: '5px 0'}}>{descText}</p>
+      <p className="forecast-desc" style={{ margin: '5px 0' }}>{descText}</p>
       {/* Виведення часу останнього оновлення */}
-      <p style={{fontSize: '11px', color: '#94a3b8', margin: '5px 0'}}>Оновлено: {time}</p>
-      <button
+      <p style={{ fontSize: '11px', color: '#94a3b8', margin: '5px 0' }}>Оновлено: {time}</p>
+      <a
+        href={'#/cities/' + id}
+        data-link
         className="add-weather-submit"
         style={{ marginTop: '10px', marginRight: '6px', fontSize: '13px', padding: '4px 8px' }}
-        onClick={() => setWeatherIcon(weatherCode, name)}
       >
-        Показати на іконці
-      </button>
+        Показати прогноз
+      </a>
       {/* Кнопка видалення запису, яка викликає функцію onDelete з передачею id */}
       <button
         className="add-weather-submit"
@@ -142,26 +155,24 @@ function loadFromLocalStorage() {
   }
 }
 
-function App() {
+function CitiesPage() {
   // Стан для списку міст (спочатку порожній, завантажиться з БД)
   const [items, setItems] = React.useState([]);
-  
+
   // Стан для відображення помилки бази даних в інтерфейсі
-  const [dbError, setDbError] = React.useState(''); 
+  const [dbError, setDbError] = React.useState('');
 
   // Нова модель даних для форми (місто, координати, температура, код погоди)
   const [nameInput, setNameInput] = React.useState('');
   const [latInput, setLatInput] = React.useState('');
   const [lonInput, setLonInput] = React.useState('');
-  const [tempInput, setTempInput] = React.useState('');
-  const [codeInput, setCodeInput] = React.useState('0');
 
   // Стан для результату найтеплішого дня
   const [warmestResult, setWarmestResult] = React.useState('');
 
   // Завантаження даних з IndexedDB та міграція з localStorage
   React.useEffect(() => {
-    async function loadData() {
+    async function loadCities() {
       try {
         let dbItems = await getCitiesFromDB();
 
@@ -188,7 +199,7 @@ function App() {
         setDbError('Помилка бази даних: не вдалося завантажити збережені міста.');
       }
     }
-    loadData();
+    loadCities();
   }, []); // Порожній масив означає, що це виконається лише 1 раз при завантаженні сторінки
 
   // Похідне значення: середня температура
@@ -196,42 +207,48 @@ function App() {
     ? (items.reduce((sum, item) => sum + item.temperature, 0) / items.length).toFixed(1)
     : 0;
 
-  // Асинхронний обробник додавання нового міста
+  // Асинхронний обробник додавання нового міста.
+  // Температуру і код погоди беремо з API за координатами
   const handleAddWeather = async (e) => {
     e.preventDefault();
-    if (!nameInput || !latInput || !lonInput || tempInput === '') return;
+    if (!nameInput || !latInput || !lonInput) return;
 
-    // Створюємо об'єкт за новою моделлю даних
-    const newItem = {
-      id: Date.now(), // Унікальний ID на основі поточного часу
-      name: nameInput.trim(),
-      lat: Number(latInput),
-      lon: Number(lonInput),
-      temperature: Number(tempInput),
-      weatherCode: Number(codeInput),
-      time: new Date().toLocaleTimeString() // фіксуємо час створення/оновлення
-    };
+    const lat = Number(latInput);
+    const lon = Number(lonInput);
 
     try {
+      // Запит до API (buildApiUrl оголошена нижче у файлі, але підіймається)
+      const response = await fetch(buildApiUrl(lat, lon));
+      if (!response.ok) throw new Error('Помилка сервера: ' + response.status);
+      const data = await response.json();
+
+      // Створюємо об'єкт за моделлю даних (температура і код - з API)
+      const newItem = {
+        id: Date.now(), // Унікальний ID на основі поточного часу
+        name: nameInput.trim(),
+        lat: lat,
+        lon: lon,
+        temperature: data.current.temperature_2m,
+        weatherCode: data.current.weather_code,
+        time: new Date().toLocaleTimeString() // час, на який зафіксована температура
+      };
+
       // Зберігаємо запис у базу даних IndexedDB
       await addCityToDB(newItem);
 
-      // Оновлюємо масив у React
+      // Оновлюємо масив у React і дублюємо в localStorage
       const updatedItems = [...items, newItem];
       setItems(updatedItems);
-
-      // Також дублюємо в localStorage для історії міграцій/надійності
       saveToLocalStorage(updatedItems);
-      
+
       // Очищаємо форму
       setNameInput('');
       setLatInput('');
       setLonInput('');
-      setTempInput('');
-      setCodeInput('0');
-      setDbError(''); // очищаємо помилку, якщо запис пройшов успішно
+      setDbError('');
     } catch (error) {
-      setDbError('Помилка бази даних: не вдалося зберегти нове місто.');
+      console.error('Помилка додавання міста:', error);
+      setDbError('Не вдалося додати місто: перевірте координати та з\'єднання.');
     }
   };
 
@@ -263,85 +280,61 @@ function App() {
     setWarmestResult(`Найтепліше: ${maxItem.name} (+${maxItem.temperature} C)`);
   };
 
+  // Повертається розмітка сторінки "/cities".
   return (
     <React.Fragment>
-      {/* Виведення помилки IndexedDB на екран */}
-      {dbError && ReactDOM.createPortal(
-        <div style={{backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontWeight: 'bold'}}>
-          {dbError}
-        </div>,
-        document.querySelector('.top-wrapper') // або інший існуючий контейнер
-      )}
+      {/* Виведення помилки IndexedDB прямо на сторінці */}
+      {dbError && <div className="db-error">{dbError}</div>}
 
-      {/* Рендер карток */}
-      {items.map(item => (
-        <WeatherCard
-          key={item.id}
-          id={item.id}
-          name={item.name}
-          lat={item.lat}
-          lon={item.lon}
-          temperature={item.temperature}
-          weatherCode={item.weatherCode}
-          time={item.time}
-          onDelete={handleDelete} // Передаємо функцію видалення в кожну картку
-        />
-      ))}
+      {/* Форма додавання міста */}
+      <form className="add-weather-form" onSubmit={handleAddWeather}>
+        <h3 className="add-weather-title">Зберегти нове місто</h3>
+        <div className="form-inputs" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <input type="text" className="add-weather-input" placeholder="Місто (напр. Київ)" value={nameInput} onChange={e => setNameInput(e.target.value)} required />
+          <input type="number" step="0.01" className="add-weather-input" placeholder="Широта (lat)" value={latInput} onChange={e => setLatInput(e.target.value)} required style={{ width: '120px' }} />
+          <input type="number" step="0.01" className="add-weather-input" placeholder="Довгота (lon)" value={lonInput} onChange={e => setLonInput(e.target.value)} required style={{ width: '120px' }} />
+          {/* Кнопка submit, відправка форми викликає handleAddWeather */}
+          <button type="submit" className="add-weather-submit">Додати запис</button>
+        </div>
+      </form>
 
-      {/* Передаємо середню температуру через портал у існуючий DOM-елемент */}
-      {ReactDOM.createPortal(
-        `Середня температура за період: ${averageTemp} C`,
-        document.getElementById('avg-temp')
-      )}
+      {/* Кнопка пошуку найтеплішого запису і текст результату */}
+      <div className="warmest-action">
+        <button type="button" className="warmest-btn" onClick={findWarmest}>
+          Знайти найтепліший запис
+        </button>
+        <p className="warmest-result-text">{warmestResult}</p>
+      </div>
 
-      {/* Передаємо форму через портал у існуючий DOM-елемент */}
-      {ReactDOM.createPortal(
-        <React.Fragment>
-          <h3 className="add-weather-title">Зберегти нове місто</h3>
-          <div className="form-inputs" style={{display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
-            <input type="text" className="add-weather-input" placeholder="Місто (напр. Київ)" value={nameInput} onChange={e => setNameInput(e.target.value)} required />
-            <input type="number" step="0.01" className="add-weather-input" placeholder="Широта (lat)" value={latInput} onChange={e => setLatInput(e.target.value)} required style={{width: '120px'}}/>
-            <input type="number" step="0.01" className="add-weather-input" placeholder="Довгота (lon)" value={lonInput} onChange={e => setLonInput(e.target.value)} required style={{width: '120px'}}/>
-            <input type="number" className="add-weather-input" placeholder="Темп. C" value={tempInput} onChange={e => setTempInput(e.target.value)} min="-50" max="50" required style={{width: '100px'}}/>
-            <select className="add-weather-input" value={codeInput} onChange={e => setCodeInput(e.target.value)}>
-              {Object.entries(weatherCodes).map(([code, desc]) => (
-                <option key={code} value={code}>{desc}</option>
-              ))}
-            </select>
-            <button type="submit" className="add-weather-submit" onClick={handleAddWeather}>Додати запис</button>
-          </div>
-        </React.Fragment>,
-        document.getElementById('add-weather-form')
-      )}
+      {/* Секція зі збереженими містами */}
+      <section className="content-section forecast-section">
+        <h2>Збережені міста</h2>
 
-      {/* Передаємо кнопку пошуку через портал */}
-      {ReactDOM.createPortal(
-        <React.Fragment>
-          <button type="button" className="warmest-btn" onClick={findWarmest}>Знайти найтепліший запис</button>
-          <p className="warmest-result-text">{warmestResult}</p>
-        </React.Fragment>,
-        document.querySelector('.warmest-action')
-      )}
+        {/* Середня температура */}
+        <p className="avg-temp-info">Середня температура за період: {averageTemp} C</p>
+
+        {/* Повідомлення, якщо в базі ще немає жодного міста */}
+        {items.length === 0 && (
+          <p>Збережених міст ще немає. Додайте перше місто у формі вище.</p>
+        )}
+
+        {/* Рендер карток: {...item} передає id, name, lat, lon, temperature,
+            weatherCode і time; onDelete викликає видалення з IndexedDB */}
+        <div className="forecast-grid">
+          {items.map(item => (
+            <WeatherCard key={item.id} {...item} onDelete={handleDelete} />
+          ))}
+        </div>
+      </section>
     </React.Fragment>
   );
 }
 
-// Знаходимо підготовлений контейнер і монтуємо туди React-додаток
-const forecastGrid = document.querySelector('.forecast-grid');
-if (forecastGrid) {
-  // Видаляємо всі статичні картки, якщо вони були в HTML (React відмалює їх сам)
-  const staticCards = forecastGrid.querySelectorAll('.card');
-  staticCards.forEach(card => card.remove());
+let weatherCanvas = null;
+let wctx = null;
+let iconCaption = null;
+let toggleAnimBtn = null;
 
-  const root = ReactDOM.createRoot(forecastGrid);
-  root.render(<App />);
-}
-
-const weatherCanvas = document.querySelector('#weather-canvas');
-const wctx = weatherCanvas.getContext('2d'); // 2D-контекст для малювання
-const iconCaption = document.querySelector('#icon-caption');
-const toggleAnimBtn = document.querySelector('#toggle-anim-btn');
- 
 let iconType = 'sun';        // тип іконки: sun, partly, cloud, rain, snow, storm
 let sunAngle = 0;            // поточний кут обертання сонця
 let particles = [];          // краплі дощу або сніжинки
@@ -505,77 +498,283 @@ function stopAnimation() {
   }
 }
 
-// Кнопка старт/стоп
-toggleAnimBtn.addEventListener('click', () => {
-  animationRunning = !animationRunning;
-  toggleAnimBtn.textContent =
-    animationRunning ? 'Зупинити анімацію' : 'Запустити анімацію';
-  if (animationRunning && canvasVisible) startAnimation();
-  else stopAnimation();
-});
-
 // Зупиняємо анімацію, коли полотно прокручено за межі екрана
 const canvasObserver = new IntersectionObserver((entries) => {
   canvasVisible = entries[0].isIntersecting;
   if (canvasVisible && animationRunning) startAnimation();
   else stopAnimation();
 });
-canvasObserver.observe(weatherCanvas);
 
-// Початковий стан до відповіді API
-setWeatherIcon(0, 'Київ, початкове значення');
-startAnimation();
+// Обробник кнопки старт/стоп 
+function onToggleAnimation() {
+  animationRunning = !animationRunning;
+  toggleAnimBtn.textContent =
+    animationRunning ? 'Зупинити анімацію' : 'Запустити анімацію';
+  if (animationRunning && canvasVisible) startAnimation();
+  else stopAnimation();
+}
 
-const API_URL = 'https://api.open-meteo.com/v1/forecast?latitude=50.45&longitude=30.52&current=temperature_2m,weather_code&timezone=auto';
+// Підключає canvas і запускає анімацію
+function initWeatherCanvas() {
+  weatherCanvas = document.querySelector('#weather-canvas');
+  wctx = weatherCanvas.getContext('2d');
+  iconCaption = document.querySelector('#icon-caption');
+  toggleAnimBtn = document.querySelector('#toggle-anim-btn');
+  toggleAnimBtn.textContent =
+    animationRunning ? 'Зупинити анімацію' : 'Запустити анімацію';
+  toggleAnimBtn.addEventListener('click', onToggleAnimation);
+  canvasVisible = true;
+  canvasObserver.observe(weatherCanvas);
+  if (animationRunning) startAnimation();
+}
 
-const updateBtn = document.querySelector('#update-btn');
-const apiStatus = document.querySelector('#api-status');
-const currentTempValue = document.querySelector('.current-weather .temp-value');
-const currentWeatherCond = document.querySelector('.current-weather .weather-cond');
+let requestCounter = 0; // захист від застарілих відповідей
 
-async function loadData() {
-  // Вмикаємо стан завантаження
+function buildApiUrl(lat, lon) {
+  return 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
+    '&longitude=' + lon + '&current=temperature_2m,weather_code&timezone=auto';
+}
+
+async function loadData(city) {
+  const myRequest = ++requestCounter;
+  // Елементи шукаються на кожному виклику, бо сторінка щоразу створюється заново
+  const updateBtn = document.querySelector('#update-btn');
+  const apiStatus = document.querySelector('#api-status');
+  const tempValue = document.querySelector('.current-weather .temp-value');
+  const weatherCond = document.querySelector('.current-weather .weather-cond');
+
   apiStatus.textContent = 'Завантаження...';
-  apiStatus.style.color = '#fbbf24'; // жовтий колір для завантаження
+  apiStatus.style.color = '#fbbf24';
   updateBtn.disabled = true;
 
   try {
-    const response = await fetch(API_URL);
-
-    // Перевірка HTTP-статусу
-    if (!response.ok) {
-      throw new Error(`Помилка сервера: ${response.status}`);
-    }
-
+    const response = await fetch(buildApiUrl(city.lat, city.lon));
+    if (!response.ok) throw new Error(`Помилка сервера: ${response.status}`);
     const data = await response.json();
+    if (myRequest !== requestCounter) return;
 
-    console.log(data);
-
-    // Отримуємо температуру та код погоди
     const temp = data.current.temperature_2m;
     const code = data.current.weather_code;
-
-    // Оновлюємо DOM
-    currentTempValue.innerHTML = `${temp > 0 ? '+' : ''}${temp}&deg;C`;
-    currentWeatherCond.textContent = weatherCodes[code] || 'невідомо';
-    // Оновлюємо Canvas-іконку за новими даними з API
-    setWeatherIcon(code, 'Київ, поточна погода');
-
-    // Очищаємо статус при успіху
+    tempValue.innerHTML = `${temp > 0 ? '+' : ''}${temp}&deg;C`;
+    weatherCond.textContent = weatherCodes[code] || 'невідомо';
+    setWeatherIcon(code, `${city.name}, поточна погода`);
     apiStatus.textContent = '';
-
   } catch (error) {
-    // Обробка помилки 
+    if (myRequest !== requestCounter) return;
     apiStatus.textContent = 'Не вдалося отримати прогноз погоди';
-    apiStatus.style.color = '#f87171'; // червоний колір для помилки
+    apiStatus.style.color = '#f87171';
     console.error('Помилка API:', error);
   } finally {
-    // Вимикаємо стан завантаження
     updateBtn.disabled = false;
   }
 }
 
-updateBtn.addEventListener('click', loadData);
+function forecastTemplate() {
+  return `
+    <div class="top-wrapper">
+      <section id="current" class="content-section current-weather">
+        <h2>Поточна погода</h2>
+        <button id="update-btn" class="add-weather-submit"
+                style="margin-bottom: 10px;">Оновити погоду</button>
+        <p id="api-status"
+           style="font-weight: 600; color: #fbbf24; margin: 0 0 15px 0;"></p>
+        <div class="current-weather-info">
+          <div class="weather-icon-box">
+            <canvas id="weather-canvas" class="weather-canvas"
+                    width="120" height="120"></canvas>
+            <p id="icon-caption" class="icon-caption"></p>
+          </div>
+          <div class="current-details">
+            <p id="city-name" class="city-name"></p>
+            <p class="temp-display">
+              <span class="temp-value temp-warm">--</span>,
+              <span class="weather-cond">--</span>
+            </p>
+          </div>
+        </div>
+        <div class="anim-controls">
+          <button id="toggle-anim-btn" class="add-weather-submit">Зупинити анімацію</button>
+        </div>
+      </section>
+      <aside class="daily-tip">
+        <h2>Порада дня</h2>
+        <p>Що вдягнути: сьогодні очікується сонячна погода, але ввечері можливе похолодання. Візьміть із собою легку куртку!</p>
+      </aside>
+    </div>`;
+}
 
-// Завантажуємо актуальні дані при відкритті сторінки
-loadData();
+const DEFAULT_CITY = { name: 'Київ', lat: 50.45, lon: 30.52 };
+
+function saveLastCity(city) {
+  const short = { name: city.name, lat: city.lat, lon: city.lon };
+  localStorage.setItem('lastCity', JSON.stringify(short));
+}
+
+function getLastCity() {
+  try {
+    const raw = localStorage.getItem('lastCity');
+    return raw ? JSON.parse(raw) : DEFAULT_CITY;
+  } catch (error) {
+    console.error('Пошкоджені дані lastCity:', error);
+    return DEFAULT_CITY;
+  }
+}
+
+// Маршрути:
+// / прогноз для останнього обраного міста 
+// /cities список збережених міст зі сховища "cities" 
+// /cities/:i прогноз для одного міста, :id - ключ запису в IndexedDB
+const routes = [
+  { path: '/', view: renderHome },
+  { path: '/cities', view: renderCities },
+  { path: '/cities/:id', view: renderCityDetail }
+];
+
+function matchRoute(path) {
+  const pathParts = path.split('/').filter(Boolean);
+  for (const route of routes) {
+    const routeParts = route.path.split('/').filter(Boolean);
+    if (routeParts.length !== pathParts.length) continue;
+    const params = {};
+    const isMatch = routeParts.every((part, i) => {
+      if (part.startsWith(':')) {
+        params[part.slice(1)] = pathParts[i];
+        return true;
+      }
+      return part === pathParts[i];
+    });
+    if (isMatch) return { view: route.view, params };
+  }
+  return null;
+}
+
+const app = document.querySelector('#app');
+let currentRoot = null;
+let renderCounter = 0;
+
+function clearApp() {
+  stopAnimation();
+  canvasObserver.disconnect();
+  requestCounter++;
+  if (currentRoot) {
+    currentRoot.unmount();
+    currentRoot = null;
+  }
+  app.innerHTML = '';
+}
+
+function render() {
+  const myRender = ++renderCounter;
+  const path = location.hash.slice(1) || '/';
+  const match = matchRoute(path);
+  clearApp();
+  if (match) match.view(match.params, myRender);
+  else renderNotFound('Адреси ' + path + ' не існує.');
+  highlightActiveLink(path);
+}
+
+function renderHome() {
+  renderForecastPage(getLastCity());
+}
+
+function renderCities() {
+  currentRoot = ReactDOM.createRoot(app);
+  currentRoot.render(<CitiesPage />);
+}
+
+// Спільна сторінка прогнозу: її використовують і "/", і "/cities/:id"
+function renderForecastPage(city, savedCode) {
+  app.innerHTML = forecastTemplate();
+  // Показуємо й координати, щоб одразу видно було, для якої точки прогноз
+  document.querySelector('#city-name').textContent =
+    city.name + ' (' + city.lat + ', ' + city.lon + ')';
+  initWeatherCanvas();
+
+  if (savedCode !== undefined) {
+    setWeatherIcon(savedCode, city.name + ', збережені дані');
+
+    // До відповіді API показуємо температуру й опис, збережені в базі
+    const savedTemp = city.temperature;
+    const savedDesc = weatherCodes[savedCode] || 'невідомо';
+    document.querySelector('.current-weather .temp-value').innerHTML =
+      (savedTemp > 0 ? '+' : '') + savedTemp + '&deg;C';
+    document.querySelector('.current-weather .weather-cond').textContent = savedDesc;
+
+    // Окремий рядок: що саме збережено в базі (не зникає після відповіді API)
+    const note = document.createElement('p');
+    note.className = 'icon-caption';
+    note.textContent = 'Збережено в базі на момент додавання: ' +
+      (savedTemp > 0 ? '+' : '') + savedTemp + ' C, ' + savedDesc;
+    document.querySelector('.current-details').appendChild(note);
+  } else {
+    setWeatherIcon(0, city.name + ', початкове значення');
+  }
+
+  // Кнопка "Оновити погоду" повторно запитує прогноз за координатами міста
+  document.querySelector('#update-btn')
+    .addEventListener('click', () => loadData(city));
+  loadData(city);
+}
+
+async function renderCityDetail(params, myRender) {
+  const id = Number(params.id); // параметр - рядок, а ключі в IndexedDB - числа
+  if (Number.isNaN(id)) {
+    renderNotFound('Некоректний id міста: ' + params.id);
+    return;
+  }
+  try {
+    const city = await getCityByIdFromDB(id);
+    if (myRender !== renderCounter) return;// користувач уже пішов зі сторінки
+    if (!city) {
+      renderNotFound('Місто з id ' + id + ' не знайдено в базі даних.');
+      return;
+    }
+    saveLastCity(city);
+    renderForecastPage(city, city.weatherCode);
+  } catch (error) {
+    console.error('Помилка IndexedDB:', error);
+    if (myRender === renderCounter) {
+      renderNotFound('Не вдалося прочитати дані з бази даних.');
+    }
+  }
+}
+
+function renderNotFound(message) {
+  app.innerHTML = `
+    <section class="content-section not-found">
+      <h2>Сторінку не знайдено</h2>
+      <p id="not-found-text"></p>
+      <a href="#/" data-link class="add-weather-submit">На головну</a>
+    </section>`;
+  document.querySelector('#not-found-text').textContent = message;
+}
+
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[data-link]');
+  if (!link) return;
+  event.preventDefault();
+  navigate(link.getAttribute('href').slice(1));
+});
+
+// Зміна хеша додає запис в історію і викликає hashchange
+function navigate(path) {
+  location.hash = path;
+}
+
+// Підсвічує пункт меню, що відповідає поточному маршруту
+function highlightActiveLink(path) {
+  document.querySelectorAll('.main-nav a[data-link]').forEach(link => {
+    const target = link.getAttribute('href').slice(1);
+    const isActive = target === '/'
+      ? path === '/'
+      : path === target || path.startsWith(target + '/');
+    link.classList.toggle('active', isActive);
+  });
+}
+
+document.querySelector('.search-form').addEventListener('submit', (event) => {
+  event.preventDefault();
+});
+
+window.addEventListener('hashchange', render);
+render();
