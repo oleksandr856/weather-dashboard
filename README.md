@@ -29,3 +29,27 @@
 1. Склонувати репозиторій:
    ```bash
    git clone [https://github.com/oleksandr856/weather-dashboard.git](https://github.com/oleksandr856/weather-dashboard.git)
+
+## Безпека
+ 
+Знайдено й виправлено:
+- XSS через innerHTML у renderForecastPage: поле temperature із
+  IndexedDB (або з сервера) вставлялось як HTML. Замінено на
+  textContent. Перевірено тестовим рядком з тегом img та onerror.
+- Те саме в loadData для значення з Open-Meteo. Замінено на
+  textContent.
+- buildApiUrl: lat і lon приводяться до чисел, щоб у запит до API
+  не можна було підставити зайві параметри.
+- index.html: зафіксовано версії React, ReactDOM і Babel з unpkg.
+ 
+Перевірено, змін не потрібно:
+- Назва міста (name) виводиться через JSX і textContent - безпечно.
+- forecastTemplate, renderNotFound, clearApp: innerHTML зі
+  статичним вмістом.
+- IndexedDB і localStorage не містять чутливих даних. Масив міст
+  дублюється в localStorage (appItems), це залишок міграції.
+- Секретів у коді немає, Open-Meteo працює без ключа.
+ 
+Рекомендації: додати integrity (SRI) до скриптів з CDN; у реальному
+проєкті збирати код замість Babel у браузері; розгортати тільки
+на HTTPS (Render).

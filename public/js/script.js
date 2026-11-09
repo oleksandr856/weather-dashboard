@@ -593,8 +593,14 @@ function initWeatherCanvas() {
 let requestCounter = 0; // захист від застарілих відповідей
 
 function buildApiUrl(lat, lon) {
-  return 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
-    '&longitude=' + lon + '&current=temperature_2m,weather_code&timezone=auto';
+  const safeLat = Number(lat);
+  const safeLon = Number(lon);
+  if (!Number.isFinite(safeLat) || !Number.isFinite(safeLon)) {
+    throw new Error('Некоректні координати');
+  }
+  return 'https://api.open-meteo.com/v1/forecast?latitude=' + safeLat +
+    '&longitude=' + safeLon +
+    '&current=temperature_2m,weather_code&timezone=auto';
 }
 
 async function loadData(city) {
@@ -617,7 +623,7 @@ async function loadData(city) {
 
     const temp = data.current.temperature_2m;
     const code = data.current.weather_code;
-    tempValue.innerHTML = `${temp > 0 ? '+' : ''}${temp}&deg;C`;
+    tempValue.textContent = `${temp > 0 ? '+' : ''}${temp}\u00B0C`; 
     weatherCond.textContent = weatherCodes[code] || 'невідомо';
     setWeatherIcon(code, `${city.name}, поточна погода`);
     apiStatus.textContent = '';
@@ -631,6 +637,7 @@ async function loadData(city) {
   }
 }
 
+// innerHTML безпечний: статичний шаблон без даних користувача
 function forecastTemplate() {
   return `
     <div class="top-wrapper">
@@ -758,8 +765,8 @@ function renderForecastPage(city, savedCode) {
     // До відповіді API показуємо температуру й опис, збережені в базі
     const savedTemp = city.temperature;
     const savedDesc = weatherCodes[savedCode] || 'невідомо';
-    document.querySelector('.current-weather .temp-value').innerHTML =
-      (savedTemp > 0 ? '+' : '') + savedTemp + '&deg;C';
+    document.querySelector('.current-weather .temp-value').textContent =
+      (savedTemp > 0 ? '+' : '') + savedTemp + '\u00B0C';
     document.querySelector('.current-weather .weather-cond').textContent = savedDesc;
 
     // Окремий рядок: що саме збережено в базі (не зникає після відповіді API)
